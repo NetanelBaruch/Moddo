@@ -54,6 +54,9 @@ export default function Page() {
             position: showCommentInput ? commentPosition : undefined,
         };
 
+        const handleViewClick = (e: React.MouseEvent, viewIndex: number) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+=======
         setComments((prev) => [...prev, comment]);
         setNewComment('');
         setShowCommentInput(false);
@@ -71,6 +74,9 @@ export default function Page() {
         setShowCommentInput(false);
         setSelectedView(null);
     };
+
+    const handleViewClick = (e: React.MouseEvent, viewIndex: number) => {
+        const rect = e.currentTarget.getBoundingClientRect();
 =======
 
     const handleViewClick = (e: React.MouseEvent, viewIndex: number) => {
