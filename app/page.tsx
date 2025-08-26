@@ -1,4 +1,463 @@
-setComments((prev) => [...prev, comment]);
+const handleViewClick = (e: React.MouseEvent, viewIndex: number) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        setCommentPosition({ x, y });
+        setSelectedView(viewIndex);
+        setShowCommentInput(true);
+    };
+
+    const getViewComments = (viewIndex: number) => {
+        return comments.filter((comment) => comment.viewIndex === viewIndex);
+    };
+
+    const ProgressBar = () => (
+        <div className="fixed top-0 left-0 right-0 h-1 bg-gray-800 z-50">
+            <div
+                className="h-full bg-teal-500 transition-all duration-300 ease-out"
+                style={{ width: `${(currentStep / 4) * 100}%` }}
+            />
+        </div>
+    );
+
+    const LandingScreen = () => (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center px-6">
+            <div className="w-full max-w-2xl">
+                <div className="text-center mb-12">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <span className="text-4xl">🎯</span>
+                        <h1 className="text-4xl font-medium text-gray-100 tracking-tight">Moddo</h1>
+                        <span className="text-4xl">✨</span>
+                    </div>
+                    <p className="text-gray-400 text-lg">
+                        🚀 GPT for Physical Products - Let's create something amazing!
+                    </p>
+                </div>
+
+                <div className="relative">
+                    <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="What do you want to create? 🤔 (e.g., cable organizer, phone stand, desk gadget...)"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-6 py-4 text-gray-100 text-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-150"
+                        rows={3}
+                        disabled={isGenerating}
+                    />
+
+                    <button
+                        onClick={handleGenerate}
+                        disabled={!prompt.trim() || isGenerating}
+                        className="absolute bottom-4 right-4 bg-teal-500 hover:bg-teal-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-md font-medium transition-all duration-150 flex items-center gap-2"
+                    >
+                        {isGenerating ? (
+                            <>
+                                <span>Generating</span>
+                                <span className="animate-spin">⚡</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>Generate</span>
+                                <span>🚀</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                <p className="text-gray-500 text-sm mt-4 text-center">
+                    💡 Example: cable organizer, 10cm, TPU • phone stand, adjustable • desk
+                    organizer, modular
+                </p>
+            </div>
+        </div>
+    );
+
+    const ConceptStage = () => (
+        <div className="min-h-screen bg-slate-900 flex">
+            {/* Enhanced Feedback Panel */}
+            <div className="w-1/3 border-r border-gray-800 p-6 flex flex-col">
+                <div className="flex items-center gap-2 mb-6">
+                    <h3 className="text-xl font-medium text-gray-100">Feedback & Comments</h3>
+                    <span className="text-2xl">💬</span>
+                </div>
+
+                <div className="space-y-4 flex-1 overflow-y-auto">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">🎨</span>
+                            <p className="text-gray-300 text-sm font-medium">Moddo AI</p>
+                        </div>
+                        <p className="text-gray-300 text-sm">
+                            Generated 4 concept views for: "{prompt}"
+                        </p>
+                    </div>
+
+                    <div className="bg-teal-900/30 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">✨</span>
+                            <p className="text-teal-200 text-sm font-medium">Moddo AI</p>
+                        </div>
+                        <p className="text-teal-200 text-sm">
+                            Concepts ready! Click on any view to add comments or feedback. Let's
+                            make this awesome! 🚀
+                        </p>
+                    </div>
+
+                    {/* User Comments */}
+                    {comments.map((comment) => (
+                        <div
+                            key={comment.id}
+                            className="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4"
+                        >
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg">{comment.emoji}</span>
+                                <p className="text-purple-200 text-sm font-medium">
+                                    {comment.author}
+                                </p>
+                                <span className="text-purple-300 text-xs">
+                                    {comment.timestamp.toLocaleTimeString()}
+                                </span>
+                            </div>
+                            <p className="text-purple-100 text-sm">{comment.text}</p>
+                            {comment.viewIndex !== undefined && (
+                                <p className="text-purple-300 text-xs mt-1">
+                                    📍{' '}
+                                    {
+                                        ['Front View', 'Back View', 'Side View', 'Top View'][
+                                            comment.viewIndex
+                                        ]
+                                    }
+                                </p>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Quick Comment Input */}
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    addComment(newComment);
+                                }
+                            }}
+                            placeholder="Add a quick comment... ✨"
+                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <button
+                            onClick={() => addComment(newComment)}
+                            disabled={!newComment.trim()}
+                            className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+                        >
+                            💫
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Render Grid */}
+            <div className="flex-1 p-6">
+                <h2 className="text-2xl font-medium text-gray-100 mb-8">Concept Views</h2>
+
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                    {['Front View', 'Back View', 'Side View', 'Top View'].map((view, index) => (
+                        <div
+                            key={view}
+                            className="relative bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-teal-500 cursor-pointer transition-all duration-150 aspect-square flex items-center justify-center group"
+                            onClick={(e) => handleViewClick(e, index)}
+                        >
+                            {/* Comment Indicator */}
+                            {getViewComments(index).length > 0 && (
+                                <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                                    {getViewComments(index).length}
+                                </div>
+                            )}
+
+                            {/* Hover Overlay */}
+                            <div className="absolute inset-0 bg-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-lg flex items-center justify-center">
+                                <span className="text-teal-300 text-sm font-medium">
+                                    💬 Click to comment
+                                </span>
+                            </div>
+
+                            <div className="text-center">
+                                <div className="w-32 h-32 bg-gray-700 rounded-lg mb-4 mx-auto flex items-center justify-center relative overflow-hidden">
+                                    {/* Simulated render with gradient */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-purple-400/20"></div>
+                                    <span className="text-gray-400 text-sm relative z-10">
+                                        🎯 Render {index + 1}
+                                    </span>
+                                </div>
+                                <p className="text-gray-300 font-medium">{view}</p>
+                            </div>
+
+                            {/* Comment Input Overlay */}
+                            {showCommentInput && selectedView === index && (
+                                <div
+                                    className="absolute bg-gray-900 border border-purple-500 rounded-lg p-3 shadow-lg z-20 min-w-64"
+                                    style={{
+                                        left: Math.min(commentPosition.x, 200),
+                                        top: Math.min(commentPosition.y, 100),
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-lg">💭</span>
+                                        <span className="text-purple-300 text-sm font-medium">
+                                            Add comment to {view}
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                addComment(newComment, index);
+                                            } else if (e.key === 'Escape') {
+                                                setShowCommentInput(false);
+                                                setNewComment('');
+                                            }
+                                        }}
+                                        placeholder="What do you think? 🤔"
+                                        className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 mb-2"
+                                        autoFocus
+                                    />
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => addComment(newComment, index)}
+                                            disabled={!newComment.trim()}
+                                            className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium transition-all duration-150"
+                                        >
+                                            ✨ Add
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowCommentInput(false);
+                                                setNewComment('');
+                                            }}
+                                            className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-all duration-150"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Specs Panel */}
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                    <h3 className="text-lg font-medium text-gray-100 mb-4">
+                        Generated Specifications
+                    </h3>
+                    <div className="font-mono text-sm text-gray-300 space-y-2">
+                        <div>Dimensions: 100mm × 50mm × 20mm</div>
+                        <div>Material: TPU (Flexible)</div>
+                        <div>Features: Cable management slots, anti-slip base</div>
+                        <div>Print Time: ~2.5 hours</div>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center mt-8">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <span className="text-lg">💬</span>
+                            <span>
+                                {comments.length} comment{comments.length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+                        {comments.length > 0 && (
+                            <>
+                                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                    <span className="text-lg">🎉</span>
+                                    <span>Great feedback!</span>
+                                </div>
+                                <button
+                                    onClick={clearAllComments}
+                                    className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 px-3 py-1 rounded text-sm transition-all duration-150 flex items-center gap-1"
+                                >
+                                    <span>🗑️</span>
+                                    <span>Clear All</span>
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-2"
+                        >
+                            <span>🔄</span>
+                            <span>Refresh</span>
+                        </button>
+                        <button
+                            onClick={() => setCurrentStep(3)}
+                            className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-150 flex items-center gap-2"
+                        >
+                            <span>Continue to 3D Preview</span>
+                            <span className="text-lg">🚀</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const PreviewStage = () => (
+        <div className="min-h-screen bg-slate-900 flex">
+            <div className="w-1/4 border-r border-gray-800 p-6">
+                <h3 className="text-xl font-medium text-gray-100 mb-6">Parameters</h3>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Dimensions</label>
+                        <div className="space-y-2">
+                            <input type="range" className="w-full accent-teal-500" />
+                            <div className="font-mono text-xs text-gray-400">W: 100mm</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Material</label>
+                        <select className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-gray-100 text-sm">
+                            <option>TPU (Flexible)</option>
+                            <option>PLA (Standard)</option>
+                            <option>PETG (Durable)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div className="flex-1 p-6">
+                <h2 className="text-2xl font-medium text-gray-100 mb-8">3D Preview</h2>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg aspect-video flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="w-48 h-48 bg-gray-700 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                            <span className="text-gray-500">3D Model Viewer</span>
+                        </div>
+                        <p className="text-gray-400 text-sm">Interactive 3D preview would render here</p>
+                    </div>
+                </div>
+                <div className="flex justify-end mt-8">
+                    <button
+                        onClick={() => setCurrentStep(4)}
+                        className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-150"
+                    >
+                        Finalize Design
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
+    const STLViewer = () => (
+        <div className="min-h-screen bg-slate-900 flex">
+            <div className="flex-1 p-6">
+                <h2 className="text-2xl font-medium text-gray-100 mb-8">STL Preview</h2>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg aspect-video flex items-center justify-center mb-8">
+                    <div className="text-center">
+                        <div className="w-64 h-48 bg-gray-700 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                            <span className="text-gray-500">STL Viewer with Grid</span>
+                        </div>
+                        <p className="text-gray-400 text-sm">Final STL model with print bed visualization</p>
+                    </div>
+                </div>
+                <div className="flex gap-4">
+                    <button className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-150">
+                        Download STL
+                    </button>
+                    <button className="border border-coral-500 text-coral-500 hover:bg-coral-500 hover:text-white px-8 py-3 rounded-lg font-medium transition-all duration-150">
+                        Order a Print
+                    </button>
+                </div>
+            </div>
+            <div className="w-1/3 border-l border-gray-800 p-6">
+                <h3 className="text-xl font-medium text-gray-100 mb-6">Print Specifications</h3>
+                <div className="space-y-6">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                        <h4 className="text-gray-300 font-medium mb-3">Model Stats</h4>
+                        <div className="font-mono text-sm text-gray-400 space-y-1">
+                            <div>Volume: 45.2 cm³</div>
+                            <div>Weight: ~52g (TPU)</div>
+                            <div>Surface Area: 180 cm²</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="bg-slate-900 min-h-screen font-sans">
+            <ProgressBar />
+            {currentStep === 1 && <LandingScreen />}
+            {currentStep === 2 && <ConceptStage />}
+            {currentStep === 3 && <PreviewStage />}
+            {currentStep === 4 && <STLViewer />}
+        </div>
+    );
+}
+('use client');
+
+import { useState, useEffect } from 'react';
+
+interface Comment {
+    id: string;
+    text: string;
+    author: string;
+    timestamp: Date;
+    emoji: string;
+    position?: { x: number; y: number };
+    viewIndex?: number;
+}
+
+export default function Page() {
+    const [currentStep, setCurrentStep] = useState(1);
+    const [prompt, setPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [selectedView, setSelectedView] = useState<number | null>(null);
+    const [showCommentInput, setShowCommentInput] = useState(false);
+    const [commentPosition, setCommentPosition] = useState({ x: 0, y: 0 });
+
+    const handleGenerate = () => {
+        if (!prompt.trim()) return;
+        setIsGenerating(true);
+        setTimeout(() => {
+            setIsGenerating(false);
+            setCurrentStep(2);
+        }, 2000);
+    };
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleGenerate();
+        }
+    };
+
+    const funEmojis = ['🚀', '✨', '🎯', '💡', '🔥', '⚡', '🎨', '🌟', '💫', '🎪'];
+    const getRandomEmoji = () => funEmojis[Math.floor(Math.random() * funEmojis.length)];
+
+    const addComment = (text: string, viewIndex?: number) => {
+        if (!text.trim()) return;
+
+        const comment: Comment = {
+            id: Date.now().toString(),
+            text: text.trim(),
+            author: 'You',
+            timestamp: new Date(),
+            emoji: getRandomEmoji(),
+            viewIndex,
+            position: showCommentInput ? commentPosition : undefined,
+        };
+
+        setComments((prev) => [...prev, comment]);
         setNewComment('');
         setShowCommentInput(false);
         setSelectedView(null);
@@ -18,6 +477,484 @@ setComments((prev) => [...prev, comment]);
 
     const handleViewClick = (e: React.MouseEvent, viewIndex: number) => {
         const rect = e.currentTarget.getBoundingClientRect();
+=======
+'use client';
+
+import { useState } from 'react';
+
+interface Comment {
+    id: string;
+    text: string;
+    author: string;
+    timestamp: Date;
+    emoji: string;
+    position?: { x: number; y: number };
+    viewIndex?: number;
+}
+
+export default function Page() {
+    const [currentStep, setCurrentStep] = useState(1);
+    const [prompt, setPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [selectedView, setSelectedView] = useState<number | null>(null);
+    const [showCommentInput, setShowCommentInput] = useState(false);
+    const [commentPosition, setCommentPosition] = useState({ x: 0, y: 0 });
+
+    const handleGenerate = () => {
+        if (!prompt.trim()) return;
+        setIsGenerating(true);
+        setTimeout(() => {
+            setIsGenerating(false);
+            setCurrentStep(2);
+        }, 2000);
+    };
+
+    const handleKeyPress = (e: any) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleGenerate();
+        }
+    };
+
+    const funEmojis = ['🚀', '✨', '🎯', '💡', '🔥', '⚡', '🎨', '🌟', '💫', '🎪'];
+    const getRandomEmoji = () => funEmojis[Math.floor(Math.random() * funEmojis.length)];
+
+    const addComment = (text: string, viewIndex?: number) => {
+        if (!text.trim()) return;
+
+        const comment: Comment = {
+            id: Date.now().toString(),
+            text: text.trim(),
+            author: 'You',
+            timestamp: new Date(),
+            emoji: getRandomEmoji(),
+            viewIndex,
+            position: showCommentInput ? commentPosition : undefined,
+        };
+
+        setComments((prev) => [...prev, comment]);
+        setNewComment('');
+        setShowCommentInput(false);
+        setSelectedView(null);
+        
+        // Auto-reload after a short delay to show the new comment
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
+
+    const clearAllComments = () => {
+        setComments([]);
+        setNewComment('');
+        setShowCommentInput(false);
+        setSelectedView(null);
+    };
+
+    const handleViewClick = (e: React.MouseEvent, viewIndex: number) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        setCommentPosition({ x, y });
+        setSelectedView(viewIndex);
+        setShowCommentInput(true);
+    };
+
+    const getViewComments = (viewIndex: number) => {
+        return comments.filter((comment) => comment.viewIndex === viewIndex);
+    };
+
+    const ProgressBar = () => (
+        <div className="fixed top-0 left-0 right-0 h-1 bg-gray-800 z-50">
+            <div
+                className="h-full bg-teal-500 transition-all duration-300 ease-out"
+                style={{ width: `${(currentStep / 4) * 100}%` }}
+            />
+        </div>
+    );
+
+    const LandingScreen = () => (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center px-6">
+            <div className="w-full max-w-2xl">
+                <div className="text-center mb-12">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <span className="text-4xl">🎯</span>
+                        <h1 className="text-4xl font-medium text-gray-100 tracking-tight">Moddo</h1>
+                        <span className="text-4xl">✨</span>
+                    </div>
+                    <p className="text-gray-400 text-lg">
+                        🚀 GPT for Physical Products - Let's create something amazing!
+                    </p>
+                </div>
+
+                <div className="relative">
+                    <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="What do you want to create? 🤔 (e.g., cable organizer, phone stand, desk gadget...)"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-6 py-4 text-gray-100 text-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-150"
+                        rows={3}
+                        disabled={isGenerating}
+                    />
+
+                    <button
+                        onClick={handleGenerate}
+                        disabled={!prompt.trim() || isGenerating}
+                        className="absolute bottom-4 right-4 bg-teal-500 hover:bg-teal-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-md font-medium transition-all duration-150 flex items-center gap-2"
+                    >
+                        {isGenerating ? (
+                            <>
+                                <span>Generating</span>
+                                <span className="animate-spin">⚡</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>Generate</span>
+                                <span>🚀</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                <p className="text-gray-500 text-sm mt-4 text-center">
+                    💡 Example: cable organizer, 10cm, TPU • phone stand, adjustable • desk
+                    organizer, modular
+                </p>
+            </div>
+        </div>
+    );
+
+    const ConceptStage = () => (
+        <div className="min-h-screen bg-slate-900 flex">
+            {/* Enhanced Feedback Panel */}
+            <div className="w-1/3 border-r border-gray-800 p-6 flex flex-col">
+                <div className="flex items-center gap-2 mb-6">
+                    <h3 className="text-xl font-medium text-gray-100">Feedback & Comments</h3>
+                    <span className="text-2xl">💬</span>
+                </div>
+
+                <div className="space-y-4 flex-1 overflow-y-auto">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">🎨</span>
+                            <p className="text-gray-300 text-sm font-medium">Moddo AI</p>
+                        </div>
+                        <p className="text-gray-300 text-sm">
+                            Generated 4 concept views for: "{prompt}"
+                        </p>
+                    </div>
+
+                    <div className="bg-teal-900/30 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">✨</span>
+                            <p className="text-teal-200 text-sm font-medium">Moddo AI</p>
+                        </div>
+                        <p className="text-teal-200 text-sm">
+                            Concepts ready! Click on any view to add comments or feedback. Let's
+                            make this awesome! 🚀
+                        </p>
+                    </div>
+
+                    {/* User Comments */}
+                    {comments.map((comment) => (
+                        <div
+                            key={comment.id}
+                            className="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4"
+                        >
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg">{comment.emoji}</span>
+                                <p className="text-purple-200 text-sm font-medium">
+                                    {comment.author}
+                                </p>
+                                <span className="text-purple-300 text-xs">
+                                    {comment.timestamp.toLocaleTimeString()}
+                                </span>
+                            </div>
+                            <p className="text-purple-100 text-sm">{comment.text}</p>
+                            {comment.viewIndex !== undefined && (
+                                <p className="text-purple-300 text-xs mt-1">
+                                    📍{' '}
+                                    {
+                                        ['Front View', 'Back View', 'Side View', 'Top View'][
+                                            comment.viewIndex
+                                        ]
+                                    }
+                                </p>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Quick Comment Input */}
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    addComment(newComment);
+                                }
+                            }}
+                            placeholder="Add a quick comment... ✨"
+                            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <button
+                            onClick={() => addComment(newComment)}
+                            disabled={!newComment.trim()}
+                            className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+                        >
+                            💫
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Render Grid */}
+            <div className="flex-1 p-6">
+                <h2 className="text-2xl font-medium text-gray-100 mb-8">Concept Views</h2>
+
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                    {['Front View', 'Back View', 'Side View', 'Top View'].map((view, index) => (
+                        <div
+                            key={view}
+                            className="relative bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-teal-500 cursor-pointer transition-all duration-150 aspect-square flex items-center justify-center group"
+                            onClick={(e) => handleViewClick(e, index)}
+                        >
+                            {/* Comment Indicator */}
+                            {getViewComments(index).length > 0 && (
+                                <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                                    {getViewComments(index).length}
+                                </div>
+                            )}
+
+                            {/* Hover Overlay */}
+                            <div className="absolute inset-0 bg-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-lg flex items-center justify-center">
+                                <span className="text-teal-300 text-sm font-medium">
+                                    💬 Click to comment
+                                </span>
+                            </div>
+
+                            <div className="text-center">
+                                <div className="w-32 h-32 bg-gray-700 rounded-lg mb-4 mx-auto flex items-center justify-center relative overflow-hidden">
+                                    {/* Simulated render with gradient */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-purple-400/20"></div>
+                                    <span className="text-gray-400 text-sm relative z-10">
+                                        🎯 Render {index + 1}
+                                    </span>
+                                </div>
+                                <p className="text-gray-300 font-medium">{view}</p>
+                            </div>
+
+                            {/* Comment Input Overlay */}
+                            {showCommentInput && selectedView === index && (
+                                <div
+                                    className="absolute bg-gray-900 border border-purple-500 rounded-lg p-3 shadow-lg z-20 min-w-64"
+                                    style={{
+                                        left: Math.min(commentPosition.x, 200),
+                                        top: Math.min(commentPosition.y, 100),
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-lg">💭</span>
+                                        <span className="text-purple-300 text-sm font-medium">
+                                            Add comment to {view}
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                addComment(newComment, index);
+                                            } else if (e.key === 'Escape') {
+                                                setShowCommentInput(false);
+                                                setNewComment('');
+                                            }
+                                        }}
+                                        placeholder="What do you think? 🤔"
+                                        className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 mb-2"
+                                        autoFocus
+                                    />
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => addComment(newComment, index)}
+                                            disabled={!newComment.trim()}
+                                            className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium transition-all duration-150"
+                                        >
+                                            ✨ Add
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowCommentInput(false);
+                                                setNewComment('');
+                                            }}
+                                            className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-all duration-150"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Specs Panel */}
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                    <h3 className="text-lg font-medium text-gray-100 mb-4">
+                        Generated Specifications
+                    </h3>
+                    <div className="font-mono text-sm text-gray-300 space-y-2">
+                        <div>Dimensions: 100mm × 50mm × 20mm</div>
+                        <div>Material: TPU (Flexible)</div>
+                        <div>Features: Cable management slots, anti-slip base</div>
+                        <div>Print Time: ~2.5 hours</div>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center mt-8">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <span className="text-lg">💬</span>
+                            <span>
+                                {comments.length} comment{comments.length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+                        {comments.length > 0 && (
+                            <>
+                                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                    <span className="text-lg">🎉</span>
+                                    <span>Great feedback!</span>
+                                </div>
+                                <button
+                                    onClick={clearAllComments}
+                                    className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 px-3 py-1 rounded text-sm transition-all duration-150 flex items-center gap-1"
+                                >
+                                    <span>🗑️</span>
+                                    <span>Clear All</span>
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-2"
+                        >
+                            <span>🔄</span>
+                            <span>Refresh</span>
+                        </button>
+                        <button
+                            onClick={() => setCurrentStep(3)}
+                            className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-150 flex items-center gap-2"
+                        >
+                            <span>Continue to 3D Preview</span>
+                            <span className="text-lg">🚀</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const PreviewStage = () => (
+        <div className="min-h-screen bg-slate-900 flex">
+            <div className="w-1/4 border-r border-gray-800 p-6">
+                <h3 className="text-xl font-medium text-gray-100 mb-6">Parameters</h3>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Dimensions</label>
+                        <div className="space-y-2">
+                            <input type="range" className="w-full accent-teal-500" />
+                            <div className="font-mono text-xs text-gray-400">W: 100mm</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Material</label>
+                        <select className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-gray-100 text-sm">
+                            <option>TPU (Flexible)</option>
+                            <option>PLA (Standard)</option>
+                            <option>PETG (Durable)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div className="flex-1 p-6">
+                <h2 className="text-2xl font-medium text-gray-100 mb-8">3D Preview</h2>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg aspect-video flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="w-48 h-48 bg-gray-700 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                            <span className="text-gray-500">3D Model Viewer</span>
+                        </div>
+                        <p className="text-gray-400 text-sm">Interactive 3D preview would render here</p>
+                    </div>
+                </div>
+                <div className="flex justify-end mt-8">
+                    <button
+                        onClick={() => setCurrentStep(4)}
+                        className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-150"
+                    >
+                        Finalize Design
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
+    const STLViewer = () => (
+        <div className="min-h-screen bg-slate-900 flex">
+            <div className="flex-1 p-6">
+                <h2 className="text-2xl font-medium text-gray-100 mb-8">STL Preview</h2>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg aspect-video flex items-center justify-center mb-8">
+                    <div className="text-center">
+                        <div className="w-64 h-48 bg-gray-700 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                            <span className="text-gray-500">STL Viewer with Grid</span>
+                        </div>
+                        <p className="text-gray-400 text-sm">Final STL model with print bed visualization</p>
+                    </div>
+                </div>
+                <div className="flex gap-4">
+                    <button className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-150">
+                        Download STL
+                    </button>
+                    <button className="border border-coral-500 text-coral-500 hover:bg-coral-500 hover:text-white px-8 py-3 rounded-lg font-medium transition-all duration-150">
+                        Order a Print
+                    </button>
+                </div>
+            </div>
+            <div className="w-1/3 border-l border-gray-800 p-6">
+                <h3 className="text-xl font-medium text-gray-100 mb-6">Print Specifications</h3>
+                <div className="space-y-6">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                        <h4 className="text-gray-300 font-medium mb-3">Model Stats</h4>
+                        <div className="font-mono text-sm text-gray-400 space-y-1">
+                            <div>Volume: 45.2 cm³</div>
+                            <div>Weight: ~52g (TPU)</div>
+                            <div>Surface Area: 180 cm²</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="bg-slate-900 min-h-screen font-sans">
+            <ProgressBar />
+            {currentStep === 1 && <LandingScreen />}
+            {currentStep === 2 && <ConceptStage />}
+            {currentStep === 3 && <PreviewStage />}
+            {currentStep === 4 && <STLViewer />}
+        </div>
+    );
+}
 =======
 
     const handleViewClick = (e: React.MouseEvent, viewIndex: number) => {
