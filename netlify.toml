@@ -1,0 +1,34 @@
+[build]
+  # Directory to run build command from (root of the project)
+  base = "."
+  
+  # Build command for Next.js
+  command = "npm run build"
+  
+  # Directory that contains the deploy-ready HTML files and assets
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "18"
+
+# Redirects for Next.js routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
+  
+# Handle SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/"
+  status = 200
+  force = false
+
+[functions]
+  # Configure serverless functions
+  node_bundler = "esbuild"
